@@ -30,3 +30,6 @@
 *.exe
 *.out
 *.app
+/Screen Gatekeeper/x64
+/Screen Gatekeeper/.vs
+/Screen Gatekeeper/Screen Gatekeeper/x64
