@@ -6,16 +6,25 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	SetWindowText("Screen Gatekeeper");
 	SetGraphMode(800, 600, 16);
 	ChangeWindowMode(true);
-
 	if (DxLib_Init() == -1)
 	{
 		return -1; // DxLib_InitÇÃé∏îsÇ…ÇÊÇËèIóπ
 	}
+	SetDrawScreen(DX_SCREEN_BACK);
 
-	SetDrawScreen(DX_SCREEN_OTHER);
+	HWND hDesktopWnd = GetDesktopWindow();
+	HWND hMainWnd = GetMainWindowHandle();
 
-	int pos_x = 700;
-	int pos_y = 300;
+	WINDOWINFO windowInfo;
+	windowInfo.cbSize = sizeof(WINDOWINFO);
+
+	struct Pos {
+		int x;
+		int y;
+	};
+
+	Pos rcPos = { 700 , 300 };
+	Pos rcWindowCorrection = { 8 , 31 };
 
 	char key[256];
 
@@ -24,31 +33,41 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		GetHitKeyStateAll(key);
 
 		if (key[KEY_INPUT_RIGHT]) {
-			pos_x += 3;
+			rcPos.x += 3;
 		}
 		if (key[KEY_INPUT_LEFT]) {
-			pos_x -= 3;
+			rcPos.x -= 3;
 		}
 		if (key[KEY_INPUT_DOWN]) {
-			pos_y += 3;
+			rcPos.y += 3;
 		}
 		if (key[KEY_INPUT_UP]) {
-			pos_y -= 3;
+			rcPos.y -= 3;
 		}
-		
+
+		InvalidateRect(hDesktopWnd, nullptr, true);
+		UpdateWindow(hDesktopWnd);
+
+		GetWindowInfo(hMainWnd, &windowInfo);
+
 		ClsDrawScreen();
+		DrawBox(
+			rcPos.x - windowInfo.rcWindow.left - rcWindowCorrection.x,
+			rcPos.y - windowInfo.rcWindow.top - rcWindowCorrection.y,
+			rcPos.x + 100 - windowInfo.rcWindow.left - rcWindowCorrection.x,
+			rcPos.y + 100 - windowInfo.rcWindow.top - rcWindowCorrection.y,
+			0xffffff,
+			true
+		);
 
-		DrawGraph(0, 0, 0, true);
-
+		DrawFormatString(0, 0, 0xffffff, "%d, %d", windowInfo.rcWindow.left, windowInfo.rcWindow.top);
 		ScreenFlip();
 
-		/*UpdateWindow(GetMainWindowHandle());*/
-
 		HDC hdc;
-		hdc = CreateDC(TEXT("DISPLAY"), NULL, NULL, NULL);
+		hdc = CreateDC("DISPLAY", nullptr, nullptr, nullptr);
 		SelectObject(hdc, GetStockObject(WHITE_BRUSH));
 		//SelectObject(hdc, CreateSolidBrush(RGB(0xFF, 0, 0)));
-		Rectangle(hdc, pos_x, pos_y, pos_x + 100, pos_y + 100);
+		Rectangle(hdc, rcPos.x, rcPos.y, rcPos.x + 100, rcPos.y + 100);
 		DeleteObject(SelectObject(hdc, GetStockObject(WHITE_BRUSH)));
 		DeleteDC(hdc);
 	}
