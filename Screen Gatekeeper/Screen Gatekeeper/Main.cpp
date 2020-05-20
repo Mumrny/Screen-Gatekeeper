@@ -2,11 +2,13 @@
 #include <DxLib.h>
 #include <cassert>
 
+constexpr int screen_width = 1280;
+constexpr int screen_height = 720;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	SetWindowText("Screen Gatekeeper");
-	SetGraphMode(1280, 720, 16);
+	SetGraphMode(screen_width, screen_height, 16);
 	ChangeWindowMode(true);
 
 	if (DxLib_Init() == -1)
@@ -40,6 +42,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	BitBlt(hMemDC, 0, 0, bmpInfoDesktop.bmiHeader.biWidth, bmpInfoDesktop.bmiHeader.biHeight, hdc, 0, 0, SRCCOPY);
 	ReleaseDC(hDesktop, hdc);
 
+	InvalidateRect(GetMainWindowHandle(), nullptr, true);
+
 	BITMAP DDBInfo;
 	BITMAPINFO DIBInfo;
 
@@ -56,21 +60,29 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	GetDIBits(hdc, hBitmapDesktop, 0, DDBInfo.bmHeight, (void*)pData, &DIBInfo, DIB_RGB_COLORS);
 	ReleaseDC(GetMainWindowHandle(), hdc);
 
-	DeleteObject(hBitmapDesktop);
-
 	int imageDesktop = CreateGraphFromBmp(&bmpInfoDesktop, pData);
-	delete pData;
 
-	while ((ProcessMessage() == 0) && (CheckHitKey(KEY_INPUT_ESCAPE) == 0))
-	{
+	while ((ProcessMessage() == 0) && (CheckHitKey(KEY_INPUT_ESCAPE) == 0)) {
 		ClsDrawScreen();
 
-		DrawGraph(0, 0, imageDesktop, false);
+		DrawExtendGraph(0, 0, screen_width, screen_height, imageDesktop, false);
 
 		ScreenFlip();
+
+		hdc = GetDC(hDesktop);
+		BitBlt(hMemDC, 0, 0, bmpInfoDesktop.bmiHeader.biWidth, bmpInfoDesktop.bmiHeader.biHeight, hdc, 0, 0, SRCCOPY);
+		ReleaseDC(hDesktop, hdc);
+
+		hdc = GetDC(GetMainWindowHandle());
+		GetDIBits(hdc, hBitmapDesktop, 0, DDBInfo.bmHeight, (void*)pData, &DIBInfo, DIB_RGB_COLORS);
+		ReleaseDC(GetMainWindowHandle(), hdc);
+
+		ReCreateGraphFromBmp(&bmpInfoDesktop, pData, imageDesktop);
 	}
 
+	delete pData;
 	DeleteDC(hMemDC);
+	DeleteObject(hBitmapDesktop);
 	DxLib_End();
 	return 0;
 }
