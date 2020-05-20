@@ -2,52 +2,11 @@
 #include <DxLib.h>
 #include <cassert>
 
-WNDPROC dxWindowProcedure;
-HWND hMainWnd;
-
-struct Pos {
-	int x;
-	int y;
-};
-
-Pos rcPos = { 700 , 300 };
-
-void Draw(void) {
-	WINDOWINFO windowInfo;
-	windowInfo.cbSize = sizeof(WINDOWINFO);
-	GetWindowInfo(hMainWnd, &windowInfo);
-
-	ClsDrawScreen();
-	DrawBox(
-		rcPos.x - windowInfo.rcClient.left,
-		rcPos.y - windowInfo.rcClient.top,
-		rcPos.x + 100 - windowInfo.rcClient.left,
-		rcPos.y + 100 - windowInfo.rcClient.top,
-		0xffffff,
-		true
-	);
-
-	DrawFormatString(0, 0, 0xffffff, "%d, %d", windowInfo.rcClient.left, windowInfo.rcClient.top);
-	ScreenFlip();
-}
-
-LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
-	switch (msg) {
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		return 0;
-	case WM_MOVE:
-		//Draw(); 使うと止まる(処理が重い？)
-		break;
-	}
-	
-	return CallWindowProc(dxWindowProcedure, hwnd, msg, wparam, lparam);
-}
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	SetWindowText("Screen Gatekeeper");
-	SetGraphMode(800, 600, 16);
+	SetGraphMode(1280, 720, 16);
 	ChangeWindowMode(true);
 
 	if (DxLib_Init() == -1)
@@ -57,52 +16,61 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	SetDrawScreen(DX_SCREEN_BACK);
 
-	// DxLibのウィンドウ+自前のコールバック関数にするための設定
-	hMainWnd = GetMainWindowHandle();
-	dxWindowProcedure = (WNDPROC)GetWindowLongPtr(hMainWnd, GWLP_WNDPROC); // GWLP_WNDPROC(ウィンドウプロシージャのアドレス)
-	SetWindowLongPtr(hMainWnd, GWLP_WNDPROC, (LONG_PTR)WindowProcedure);
+	// デスクトップのビットマップハンドルを作成
+	HWND hDesktop = GetDesktopWindow();
+	RECT rcDesktop;
+	GetWindowRect(hDesktop, &rcDesktop);
 
-	/*HWND hDesktopWnd = GetDesktopWindow();*/
+	BITMAPINFO bmpInfoDesktop;
+	bmpInfoDesktop.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	bmpInfoDesktop.bmiHeader.biWidth = rcDesktop.right;
+	bmpInfoDesktop.bmiHeader.biHeight = rcDesktop.bottom;
+	bmpInfoDesktop.bmiHeader.biPlanes = 1;
+	bmpInfoDesktop.bmiHeader.biBitCount = 32;
+	bmpInfoDesktop.bmiHeader.biCompression = BI_RGB;
+	
+	HDC hdc = GetDC(GetMainWindowHandle());
+	LPDWORD lpPixelDesktop;
+	HBITMAP hBitmapDesktop = CreateDIBSection(hdc, &bmpInfoDesktop, DIB_RGB_COLORS, (void**)&lpPixelDesktop, nullptr, 0);
+	HDC hMemDC = CreateCompatibleDC(hdc);
+	SelectObject(hMemDC, hBitmapDesktop);
+	ReleaseDC(GetMainWindowHandle(), hdc);
 
-	char key[256];
+	hdc = GetDC(hDesktop);
+	BitBlt(hMemDC, 0, 0, bmpInfoDesktop.bmiHeader.biWidth, bmpInfoDesktop.bmiHeader.biHeight, hdc, 0, 0, SRCCOPY);
+	ReleaseDC(hDesktop, hdc);
+
+	BITMAP DDBInfo;
+	BITMAPINFO DIBInfo;
+
+	GetObject(hBitmapDesktop, sizeof(BITMAP), &DDBInfo);
+	DIBInfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	DIBInfo.bmiHeader.biWidth = DDBInfo.bmWidth;
+	DIBInfo.bmiHeader.biHeight = DDBInfo.bmHeight;
+	DIBInfo.bmiHeader.biPlanes = 1;
+	DIBInfo.bmiHeader.biBitCount = 32;
+	DIBInfo.bmiHeader.biCompression = BI_RGB;
+
+	BYTE *pData = new BYTE[DDBInfo.bmWidth * DDBInfo.bmHeight * 4];
+	hdc = GetDC(GetMainWindowHandle());
+	GetDIBits(hdc, hBitmapDesktop, 0, DDBInfo.bmHeight, (void*)pData, &DIBInfo, DIB_RGB_COLORS);
+	ReleaseDC(GetMainWindowHandle(), hdc);
+
+	DeleteObject(hBitmapDesktop);
+
+	int imageDesktop = CreateGraphFromBmp(&bmpInfoDesktop, pData);
+	delete pData;
 
 	while ((ProcessMessage() == 0) && (CheckHitKey(KEY_INPUT_ESCAPE) == 0))
 	{
-		GetHitKeyStateAll(key);
+		ClsDrawScreen();
 
-		if (key[KEY_INPUT_RIGHT]) {
-			rcPos.x += 3;
-		}
-		if (key[KEY_INPUT_LEFT]) {
-			rcPos.x -= 3;
-		}
-		if (key[KEY_INPUT_DOWN]) {
-			rcPos.y += 3;
-		}
-		if (key[KEY_INPUT_UP]) {
-			rcPos.y -= 3;
-		}
+		DrawGraph(0, 0, imageDesktop, false);
 
-		/*InvalidateRect(hDesktopWnd, nullptr, true);
-		UpdateWindow(hDesktopWnd);*/
-
-		WINDOWINFO windowInfo;
-		GetWindowInfo(hMainWnd, &windowInfo);
-
-		Draw();
-
-		//HDC hdc;
-		//hdc = CreateDC("DISPLAY", nullptr, nullptr, nullptr);
-		//SelectObject(hdc, GetStockObject(WHITE_BRUSH));
-		////SelectObject(hdc, CreateSolidBrush(RGB(0xFF, 0, 0)));
-		//Rectangle(hdc, rcPos.x, rcPos.y, rcPos.x + 100, rcPos.y + 100);
-		//DeleteObject(SelectObject(hdc, GetStockObject(WHITE_BRUSH)));
-		//DeleteDC(hdc);
-
-		/*InvalidateRect(hDesktopWnd, nullptr, true);
-		UpdateWindow(hDesktopWnd);*/
+		ScreenFlip();
 	}
 
+	DeleteDC(hMemDC);
 	DxLib_End();
 	return 0;
 }
