@@ -2,13 +2,18 @@
 #include <DxLib.h>
 #include <cassert>
 
-constexpr int screen_width = 1280;
-constexpr int screen_height = 720;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	SetWindowText("Screen Gatekeeper");
-	SetGraphMode(screen_width, screen_height, 16);
+
+	HWND hDesktop = GetDesktopWindow();
+	RECT rcDesktop;
+	GetWindowRect(hDesktop, &rcDesktop);
+	const int widthDesktop = rcDesktop.right;
+	const int heightDesktop = rcDesktop.bottom;
+
+	SetGraphMode(widthDesktop, heightDesktop, 16);
 	ChangeWindowMode(true);
 
 	if (DxLib_Init() == -1)
@@ -18,15 +23,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	SetDrawScreen(DX_SCREEN_BACK);
 
-	// デスクトップのビットマップハンドルを作成
-	HWND hDesktop = GetDesktopWindow();
-	RECT rcDesktop;
-	GetWindowRect(hDesktop, &rcDesktop);
-
 	BITMAPINFO bmpInfoDesktop;
 	bmpInfoDesktop.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-	bmpInfoDesktop.bmiHeader.biWidth = rcDesktop.right;
-	bmpInfoDesktop.bmiHeader.biHeight = rcDesktop.bottom;
+	bmpInfoDesktop.bmiHeader.biWidth = widthDesktop;
+	bmpInfoDesktop.bmiHeader.biHeight = heightDesktop;
 	bmpInfoDesktop.bmiHeader.biPlanes = 1;
 	bmpInfoDesktop.bmiHeader.biBitCount = 32;
 	bmpInfoDesktop.bmiHeader.biCompression = BI_RGB;
@@ -38,9 +38,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	SelectObject(hMemDC, hBitmapDesktop);
 	ReleaseDC(GetMainWindowHandle(), hdc);
 
-	hdc = GetDC(hDesktop);
+	/*hdc = GetDC(hDesktop);
 	BitBlt(hMemDC, 0, 0, bmpInfoDesktop.bmiHeader.biWidth, bmpInfoDesktop.bmiHeader.biHeight, hdc, 0, 0, SRCCOPY);
-	ReleaseDC(hDesktop, hdc);
+	ReleaseDC(hDesktop, hdc);*/
+
+	PrintWindow(GetShellWindow(), hMemDC, 0);
 
 	InvalidateRect(GetMainWindowHandle(), nullptr, true);
 
@@ -65,13 +67,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	while ((ProcessMessage() == 0) && (CheckHitKey(KEY_INPUT_ESCAPE) == 0)) {
 		ClsDrawScreen();
 
-		DrawExtendGraph(0, 0, screen_width, screen_height, imageDesktop, false);
+		DrawGraph(0, 0, imageDesktop, false);
 
 		ScreenFlip();
 
-		hdc = GetDC(hDesktop);
+		//PrintWindow(GetShellWindow(), hMemDC, 0);
+
+		/*hdc = GetDC(hDesktop);
 		BitBlt(hMemDC, 0, 0, bmpInfoDesktop.bmiHeader.biWidth, bmpInfoDesktop.bmiHeader.biHeight, hdc, 0, 0, SRCCOPY);
-		ReleaseDC(hDesktop, hdc);
+		ReleaseDC(hDesktop, hdc);*/
 
 		hdc = GetDC(GetMainWindowHandle());
 		GetDIBits(hdc, hBitmapDesktop, 0, DDBInfo.bmHeight, (void*)pData, &DIBInfo, DIB_RGB_COLORS);
