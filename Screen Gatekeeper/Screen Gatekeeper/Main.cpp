@@ -7,12 +7,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
 	SetWindowText("Screen Gatekeeper");
 
+	// ﾃﾞｽｸﾄｯﾌﾟのｻｲｽﾞを取得
 	HWND hDesktop = GetDesktopWindow();
 	RECT rcDesktop;
 	GetWindowRect(hDesktop, &rcDesktop);
 	const int widthDesktop = rcDesktop.right;
 	const int heightDesktop = rcDesktop.bottom;
 
+	// ﾃﾞｽｸﾄｯﾌﾟのｻｲｽﾞと同じ解像度のｳｨﾝﾄﾞｳにする
 	SetGraphMode(widthDesktop, heightDesktop, 16);
 	ChangeWindowMode(true);
 
@@ -21,8 +23,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		return -1; // DxLib_Initの失敗により終了
 	}
 
+	HWND hMainWnd = GetMainWindowHandle();
+
 	SetDrawScreen(DX_SCREEN_BACK);
 
+	// ﾃﾞｽｸﾄｯﾌﾟのﾋﾞｯﾄﾏｯﾌﾟの情報
 	BITMAPINFO bmpInfoDesktop;
 	bmpInfoDesktop.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 	bmpInfoDesktop.bmiHeader.biWidth = widthDesktop;
@@ -31,25 +36,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	bmpInfoDesktop.bmiHeader.biBitCount = 32;
 	bmpInfoDesktop.bmiHeader.biCompression = BI_RGB;
 	
-	HDC hdc = GetDC(GetMainWindowHandle());
-	LPDWORD lpPixelDesktop;
+	// ﾃﾞﾊﾞｲｽｺﾝﾃｷｽﾄを使用してﾃﾞｽｸﾄｯﾌﾟのﾋﾞｯﾄﾏｯﾌﾟを作成
+	HDC hdc = GetDC(hMainWnd);
+	LPDWORD lpPixelDesktop; // よく分かってないやつだけどﾋﾞｯﾄﾏｯﾌﾟを削除すれば解放されるらしい
 	HBITMAP hBitmapDesktop = CreateDIBSection(hdc, &bmpInfoDesktop, DIB_RGB_COLORS, (void**)&lpPixelDesktop, nullptr, 0);
-	HDC hMemDC = CreateCompatibleDC(hdc);
+	HDC hMemDC = CreateCompatibleDC(hdc); // ﾓﾒﾘｰに残して使う(最後に削除)
+	ReleaseDC(hMainWnd, hdc);
+
+	// ﾃﾞｽｸﾄｯﾌﾟの壁紙とｱｲｺﾝのみをｷｬﾌﾟﾁｬ
 	SelectObject(hMemDC, hBitmapDesktop);
-	ReleaseDC(GetMainWindowHandle(), hdc);
-
-	/*hdc = GetDC(hDesktop);
-	BitBlt(hMemDC, 0, 0, bmpInfoDesktop.bmiHeader.biWidth, bmpInfoDesktop.bmiHeader.biHeight, hdc, 0, 0, SRCCOPY);
-	ReleaseDC(hDesktop, hdc);*/
-
 	PrintWindow(GetShellWindow(), hMemDC, 0);
 
-	InvalidateRect(GetMainWindowHandle(), nullptr, true);
-
+	// 調べたけどまだよく分かってない部分
 	BITMAP DDBInfo;
-	BITMAPINFO DIBInfo;
-
 	GetObject(hBitmapDesktop, sizeof(BITMAP), &DDBInfo);
+	BYTE *pData = new BYTE[DDBInfo.bmWidth * DDBInfo.bmHeight * 4];
+
+	BITMAPINFO DIBInfo;
 	DIBInfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 	DIBInfo.bmiHeader.biWidth = DDBInfo.bmWidth;
 	DIBInfo.bmiHeader.biHeight = DDBInfo.bmHeight;
@@ -57,11 +60,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	DIBInfo.bmiHeader.biBitCount = 32;
 	DIBInfo.bmiHeader.biCompression = BI_RGB;
 
-	BYTE *pData = new BYTE[DDBInfo.bmWidth * DDBInfo.bmHeight * 4];
-	hdc = GetDC(GetMainWindowHandle());
+	// よく分かってないけどﾃﾞｽｸﾄｯﾌﾟのﾋﾞｯﾄﾏｯﾌﾟ情報をﾍﾞｰｽにDDB情報とDIB情報を
+	// 使って実ﾃﾞｰﾀを作っている？
+	hdc = GetDC(hMainWnd);
 	GetDIBits(hdc, hBitmapDesktop, 0, DDBInfo.bmHeight, (void*)pData, &DIBInfo, DIB_RGB_COLORS);
-	ReleaseDC(GetMainWindowHandle(), hdc);
+	ReleaseDC(hMainWnd, hdc);
 
+	// CreateGraphFromBmpでﾃﾞｽｸﾄｯﾌﾟの画像ﾊﾝﾄﾞﾙを取得
+	// (恐らく第一引数が解釈に使うためのﾋﾞｯﾄﾏｯﾌﾟの情報、第二引数が実ﾃﾞｰﾀ)
 	int imageDesktop = CreateGraphFromBmp(&bmpInfoDesktop, pData);
 
 	while ((ProcessMessage() == 0) && (CheckHitKey(KEY_INPUT_ESCAPE) == 0)) {
@@ -70,23 +76,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		DrawGraph(0, 0, imageDesktop, false);
 
 		ScreenFlip();
-
-		//PrintWindow(GetShellWindow(), hMemDC, 0);
-
-		/*hdc = GetDC(hDesktop);
-		BitBlt(hMemDC, 0, 0, bmpInfoDesktop.bmiHeader.biWidth, bmpInfoDesktop.bmiHeader.biHeight, hdc, 0, 0, SRCCOPY);
-		ReleaseDC(hDesktop, hdc);*/
-
-		hdc = GetDC(GetMainWindowHandle());
-		GetDIBits(hdc, hBitmapDesktop, 0, DDBInfo.bmHeight, (void*)pData, &DIBInfo, DIB_RGB_COLORS);
-		ReleaseDC(GetMainWindowHandle(), hdc);
-
-		ReCreateGraphFromBmp(&bmpInfoDesktop, pData, imageDesktop);
 	}
 
+	// 自分で用意した分の後処理
 	delete pData;
 	DeleteDC(hMemDC);
 	DeleteObject(hBitmapDesktop);
+
 	DxLib_End();
 	return 0;
 }
