@@ -1,14 +1,11 @@
 #pragma once
 #include <windows.h>
 #include <unordered_map>
+#include <memory>
+#include "Geometry.h"
 
 
-struct Size {
-	int width;
-	int height;
-	Size() {}
-	Size(int w, int h) : width(w), height(h) {}
-};
+class GameWindow;
 
 struct CaptureData {
 	HWND hWnd;
@@ -32,8 +29,12 @@ private:
 	// ‘ã“ü‹Ö~
 	void operator=(const Application&) = delete;
 
+	Size screenSize;
+
 	HWND hMainWnd;
 	std::unordered_map<std::string, CaptureData> capDatas;
+
+	std::shared_ptr<GameWindow> gameWnd;
 
 	void CreateCaptureDataForHwnd(HWND hWnd, std::string key, bool reCreateFlag);
 	void ReCreateCapDataHimg(std::string key);
@@ -44,6 +45,8 @@ public:
 		static Application _instance;
 		return _instance;
 	}
+
+	const Size GetScreenSize(void) const;
 
 	// ‰Šú‰»ˆ—
 	bool Init(void);

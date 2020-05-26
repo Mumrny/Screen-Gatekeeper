@@ -1,6 +1,8 @@
 #include <windows.h>
 #include <DxLib.h>
 #include <cassert>
+#include "Geometry.h"
+#include "GameWindow.h"
 #include "Application.h"
 
 
@@ -11,6 +13,11 @@ Application::~Application() {}
 
 void
 Application::CreateCaptureDataForHwnd(HWND hWnd, std::string key, bool reCreateFlag) {
+	assert(hWnd != nullptr);
+	for (auto capData : capDatas) {
+		assert(capData.first != key);
+	}
+
 	capDatas[key].hWnd = hWnd;
 	GetWindowRect(hWnd, &capDatas[key].rc);
 	capDatas[key].rcSize =
@@ -27,9 +34,9 @@ Application::CreateCaptureDataForHwnd(HWND hWnd, std::string key, bool reCreateF
 	capDatas[key].bmpInfo.bmiHeader.biCompression = BI_RGB;
 
 	HDC hdc = GetDC(hMainWnd);
-	LPDWORD lpPixel; // よく分かってないやつだけどﾋﾞｯﾄﾏｯﾌﾟを削除すれば解放されるらしい
+	LPDWORD lpPixel;
 	capDatas[key].hBitmap = CreateDIBSection(hdc, &capDatas[key].bmpInfo, DIB_RGB_COLORS, (void**)&lpPixel, nullptr, 0);
-	capDatas[key].hMemDC = CreateCompatibleDC(hdc); // ﾓﾒﾘｰに残して使う(最後に削除)
+	capDatas[key].hMemDC = CreateCompatibleDC(hdc);
 	ReleaseDC(hMainWnd, hdc);
 
 	SelectObject(capDatas[key].hMemDC, capDatas[key].hBitmap);
@@ -66,23 +73,25 @@ Application::ReCreateCapDataHimg(std::string key) {
 	ReCreateGraphFromBmp(&capDatas[key].bmpInfo, capDatas[key].pData, capDatas[key].hImg);
 }
 
+const Size
+Application::GetScreenSize(void) const {
+	return screenSize;
+}
+
 bool
 Application::Init(void) {
 	SetWindowText("Screen Gatekeeper");
-
-	// ﾃﾞｽｸﾄｯﾌﾟのｻｲｽﾞを取得
-	HWND hDesktop = GetDesktopWindow();
+	
 	RECT rcDesktop;
-	GetWindowRect(hDesktop, &rcDesktop);
-	const int widthDesktop = rcDesktop.right;
-	const int heightDesktop = rcDesktop.bottom;
-
-	// ﾃﾞｽｸﾄｯﾌﾟのｻｲｽﾞと同じ解像度のｳｨﾝﾄﾞｳにする
-	SetGraphMode(widthDesktop, heightDesktop, 16);
+	GetWindowRect(GetDesktopWindow(), &rcDesktop);
+	screenSize.width = rcDesktop.right;
+	screenSize.height = rcDesktop.bottom;
+	
+	SetGraphMode(screenSize.width, screenSize.height, 16);
 	ChangeWindowMode(true);
 
 	if (DxLib_Init() == -1) {
-		return false; // DxLib_Initの失敗により終了
+		return false;
 	}
 
 	hMainWnd = GetMainWindowHandle();
@@ -91,6 +100,9 @@ Application::Init(void) {
 
 	CreateCaptureDataForHwnd(GetDesktopWindow(), "desktop", false);
 	CreateCaptureDataForHwnd(FindWindow("Shell_TrayWnd", nullptr), "taskbar", true);
+
+	gameWnd.reset(new GameWindow());
+	gameWnd->Init();
 
 	return true;
 }
@@ -117,6 +129,8 @@ Application::Run(void) {
 		SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
 		DrawGraph(0, capDatas["taskbar"].rc.top, capDatas["taskbar"].hImg, true);
+
+		gameWnd->Draw();
 
 		ScreenFlip();
 
