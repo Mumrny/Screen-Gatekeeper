@@ -47,6 +47,7 @@ public:
 	}
 
 	const Size GetScreenSize(void) const;
+	const RECT GetCaptureRect(std::string key) const;
 
 	// ‰Šú‰»ˆ—
 	bool Init(void);

@@ -78,6 +78,13 @@ Application::GetScreenSize(void) const {
 	return screenSize;
 }
 
+const RECT
+Application::GetCaptureRect(std::string key) const {
+	auto itr = capDatas.find(key);
+	assert(itr != capDatas.end());
+	return itr->second.rc;
+}
+
 bool
 Application::Init(void) {
 	SetWindowText("Screen Gatekeeper");
@@ -110,9 +117,13 @@ Application::Init(void) {
 void
 Application::Run(void) {
 	while ((ProcessMessage() == 0) && (CheckHitKey(KEY_INPUT_ESCAPE) == 0)) {
+		gameWnd->Update();
+
 		ClsDrawScreen();
 
 		DrawGraph(0, 0, capDatas["desktop"].hImg, false);
+
+		gameWnd->Draw();
 
 		// タスクバーの色情報の取り方が見つかるまでの仮置き背景
 		SetDrawBlendMode(DX_BLENDMODE_ALPHA_X4, 256 - 4);
@@ -129,8 +140,6 @@ Application::Run(void) {
 		SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
 		DrawGraph(0, capDatas["taskbar"].rc.top, capDatas["taskbar"].hImg, true);
-
-		gameWnd->Draw();
 
 		ScreenFlip();
 

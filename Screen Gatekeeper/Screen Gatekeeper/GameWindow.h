@@ -7,6 +7,14 @@ private:
 	int hImg;
 	Position2f windowPos;
 	Position2f clientPos;
+
+	bool moveFlag;
+	Position2 mousePos;
+	Position2 mousePosOld;
+	int mouseInputLeftOld;
+
+	void UpdateClientPos(void);
+
 public:
 	GameWindow();
 	~GameWindow();
@@ -17,6 +25,7 @@ public:
 	const Size GetWindowSize(void) const;
 	const Size GetClientSize(void) const;
 
+	void Update(void);
 	void Draw(void);
 
 	bool Init(void);
