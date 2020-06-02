@@ -2,6 +2,7 @@
 #include <windows.h>
 #include <unordered_map>
 #include <memory>
+#include <array>
 #include "Geometry.h"
 
 
@@ -38,6 +39,9 @@ private:
 
 	void CreateCaptureDataForHwnd(HWND hWnd, std::string key, bool reCreateFlag);
 	void ReCreateCapDataHimg(std::string key);
+
+	void Update(void);
+	void Draw(void);
 
 public:
 	~Application();

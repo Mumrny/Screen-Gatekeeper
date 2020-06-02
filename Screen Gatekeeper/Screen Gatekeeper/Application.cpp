@@ -73,6 +73,38 @@ Application::ReCreateCapDataHimg(std::string key) {
 	ReCreateGraphFromBmp(&capDatas[key].bmpInfo, capDatas[key].pData, capDatas[key].hImg);
 }
 
+void
+Application::Update(void) {
+	gameWnd->Update();
+}
+
+void
+Application::Draw(void) {
+	ClsDrawScreen();
+
+	DrawGraph(0, 0, capDatas["desktop"].hImg, false);
+
+	gameWnd->Draw();
+
+	// タスクバーの色情報の取り方が見つかるまでの仮置き背景
+	SetDrawBlendMode(DX_BLENDMODE_ALPHA_X4, 256 - 4);
+	SetDrawBright(68, 68, 68);
+	DrawBox(
+		capDatas["taskbar"].rc.left,
+		capDatas["taskbar"].rc.top,
+		capDatas["taskbar"].rc.right,
+		capDatas["taskbar"].rc.bottom,
+		0x202020,
+		true
+	);
+	SetDrawBright(255, 255, 255);
+	SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+
+	DrawGraph(0, capDatas["taskbar"].rc.top, capDatas["taskbar"].hImg, true);
+
+	ScreenFlip();
+}
+
 const Size
 Application::GetScreenSize(void) const {
 	return screenSize;
@@ -117,31 +149,8 @@ Application::Init(void) {
 void
 Application::Run(void) {
 	while ((ProcessMessage() == 0) && (CheckHitKey(KEY_INPUT_ESCAPE) == 0)) {
-		gameWnd->Update();
-
-		ClsDrawScreen();
-
-		DrawGraph(0, 0, capDatas["desktop"].hImg, false);
-
-		gameWnd->Draw();
-
-		// タスクバーの色情報の取り方が見つかるまでの仮置き背景
-		SetDrawBlendMode(DX_BLENDMODE_ALPHA_X4, 256 - 4);
-		SetDrawBright(68, 68, 68);
-		DrawBox(
-			capDatas["taskbar"].rc.left,
-			capDatas["taskbar"].rc.top,
-			capDatas["taskbar"].rc.right,
-			capDatas["taskbar"].rc.bottom,
-			0x202020,
-			true
-		);
-		SetDrawBright(255, 255, 255);
-		SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
-
-		DrawGraph(0, capDatas["taskbar"].rc.top, capDatas["taskbar"].hImg, true);
-
-		ScreenFlip();
+		Update();
+		Draw();
 
 		for (auto capData : capDatas) {
 			if (capData.second.reCreateFlag) {

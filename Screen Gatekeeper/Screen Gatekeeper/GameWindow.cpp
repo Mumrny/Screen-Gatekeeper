@@ -5,11 +5,11 @@
 #include "GameWindow.h"
 
 
-constexpr int gameWindowWidth = 800;
-constexpr int gameWindowHeight = 630;
+constexpr int gameWindowWidth = 400;
+constexpr int gameWindowHeight = 330;
 
-constexpr int gameClientWidth = 800;
-constexpr int gameClientHeight = 600;
+constexpr int gameClientWidth = 400;
+constexpr int gameClientHeight = 300;
 
 GameWindow::GameWindow() {}
 
@@ -90,7 +90,7 @@ GameWindow::Init(void) {
 
 	const Size scSize = Application::Instance().GetScreenSize();
 	windowPos.x = (scSize.width - gameWindowWidth) / 2;
-	windowPos.y = (scSize.height - gameWindowHeight) / 2;
+	windowPos.y = (scSize.height - gameWindowHeight) / 2 - (gameWindowHeight - gameClientHeight);
 
 	UpdateClientPos();
 
