@@ -3,6 +3,7 @@
 #include <cassert>
 #include "Geometry.h"
 #include "GameWindow.h"
+#include "Stage.h"
 #include "Application.h"
 
 
@@ -76,6 +77,7 @@ Application::ReCreateCapDataHimg(std::string key) {
 void
 Application::Update(void) {
 	gameWnd->Update();
+	stage->Update();
 }
 
 void
@@ -85,6 +87,7 @@ Application::Draw(void) {
 	DrawGraph(0, 0, capDatas["desktop"].hImg, false);
 
 	gameWnd->Draw();
+	stage->Draw();
 
 	// タスクバーの色情報の取り方が見つかるまでの仮置き背景
 	SetDrawBlendMode(DX_BLENDMODE_ALPHA_X4, 256 - 4);
@@ -142,6 +145,9 @@ Application::Init(void) {
 
 	gameWnd.reset(new GameWindow());
 	gameWnd->Init();
+
+	stage.reset(new Stage(gameWnd));
+	stage->Init();
 
 	return true;
 }

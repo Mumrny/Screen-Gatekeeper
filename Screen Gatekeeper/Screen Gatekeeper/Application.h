@@ -7,6 +7,7 @@
 
 
 class GameWindow;
+class Stage;
 
 struct CaptureData {
 	HWND hWnd;
@@ -36,6 +37,7 @@ private:
 	std::unordered_map<std::string, CaptureData> capDatas;
 
 	std::shared_ptr<GameWindow> gameWnd;
+	std::shared_ptr<Stage> stage;
 
 	void CreateCaptureDataForHwnd(HWND hWnd, std::string key, bool reCreateFlag);
 	void ReCreateCapDataHimg(std::string key);
