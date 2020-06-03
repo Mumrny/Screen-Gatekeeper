@@ -15,6 +15,7 @@ private:
 	std::shared_ptr<GameWindow> gameWnd;
 
 	std::vector<int> stageData;
+	Position2 pos;
 
 	struct ChipState {
 		bool outWndFlag;
@@ -22,6 +23,7 @@ private:
 		Vector2f speed;
 		float angle;
 		float rotSpeed;
+		bool delFlag;
 	};
 	std::vector<ChipState> wndChips;
 
