@@ -14,8 +14,16 @@ private:
 
 	std::shared_ptr<GameWindow> gameWnd;
 
-	std::vector<int> stageData;
-	Position2 pos;
+	struct StageData {
+		Vector2 chipCnt;
+		Size size;
+		Position2 pos;
+
+		std::vector<int> mapData;
+		Position2 startPoint;
+		Position2 goalPoint;
+	};
+	StageData stageData;
 
 	struct ChipState {
 		bool outWndFlag;
@@ -26,6 +34,7 @@ private:
 		bool delFlag;
 	};
 	std::vector<ChipState> wndChips;
+	std::vector<ChipState> fenceChips;
 
 	void UpdateStageImg(void);
 
@@ -33,8 +42,13 @@ public:
 	Stage(std::shared_ptr<GameWindow> gameWnd);
 	~Stage();
 
+	Position2f GetStartPos(void) const;
+	Position2f GetGoalPos(void) const;
+
 	void Init(void);
 
 	void Update(void);
-	void Draw(void);
+	void DrawMap(void);
+	void DrawFenceChips(void);
+	void DrawWndChips(void);
 };

@@ -87,6 +87,9 @@ Application::Draw(void) {
 	DrawGraph(0, 0, capDatas["desktop"].hImg, false);
 
 	gameWnd->Draw();
+	stage->DrawMap();
+
+	stage->DrawFenceChips();
 
 	// タスクバーの色情報の取り方が見つかるまでの仮置き背景
 	SetDrawBlendMode(DX_BLENDMODE_ALPHA_X4, 256 - 4);
@@ -104,7 +107,7 @@ Application::Draw(void) {
 
 	DrawGraph(0, capDatas["taskbar"].rc.top, capDatas["taskbar"].hImg, true);
 
-	stage->Draw();
+	stage->DrawWndChips();
 
 	ScreenFlip();
 }
