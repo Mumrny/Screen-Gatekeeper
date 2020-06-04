@@ -1,9 +1,9 @@
 #include <windows.h>
 #include <DxLib.h>
 #include <cassert>
-#include "Geometry.h"
 #include "GameWindow.h"
 #include "Stage.h"
+#include "Alien.h"
 #include "Application.h"
 
 
@@ -77,7 +77,10 @@ Application::ReCreateCapDataHimg(std::string key) {
 void
 Application::Update(void) {
 	gameWnd->Update();
-	stage->Update();
+	if (startFlag) {
+		stage->Update();
+	}
+	alien->Update();
 }
 
 void
@@ -88,6 +91,8 @@ Application::Draw(void) {
 
 	gameWnd->Draw();
 	stage->DrawMap();
+
+	alien->Draw();
 
 	stage->DrawFenceChips();
 
@@ -124,6 +129,16 @@ Application::GetCaptureRect(std::string key) const {
 	return itr->second.rc;
 }
 
+const bool
+Application::GetStartFlag(void) const {
+	return startFlag;
+}
+
+void
+Application::GameStart(void) {
+	startFlag = true;
+}
+
 bool
 Application::Init(void) {
 	SetWindowText("Screen Gatekeeper");
@@ -152,6 +167,11 @@ Application::Init(void) {
 
 	stage.reset(new Stage(gameWnd));
 	stage->Init();
+	
+	alien.reset(new Alien("Image/Alien.png", Vector2f(4, 2), Size(60, 120), gameWnd, stage));
+	alien->Init();
+
+	startFlag = false;
 
 	return true;
 }

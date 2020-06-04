@@ -11,6 +11,8 @@ class Stage;
 class Character {
 protected:
 	std::vector<int> hImg;
+	Vector2f divCnt;
+	Size divSize;
 
 	std::shared_ptr<GameWindow> gameWnd;
 	std::shared_ptr<Stage> stage;

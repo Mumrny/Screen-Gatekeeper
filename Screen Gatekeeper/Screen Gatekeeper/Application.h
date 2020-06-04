@@ -8,6 +8,7 @@
 
 class GameWindow;
 class Stage;
+class Character;
 
 struct CaptureData {
 	HWND hWnd;
@@ -38,6 +39,9 @@ private:
 
 	std::shared_ptr<GameWindow> gameWnd;
 	std::shared_ptr<Stage> stage;
+	std::shared_ptr<Character> alien;
+
+	bool startFlag;
 
 	void CreateCaptureDataForHwnd(HWND hWnd, std::string key, bool reCreateFlag);
 	void ReCreateCapDataHimg(std::string key);
@@ -54,6 +58,9 @@ public:
 
 	const Size GetScreenSize(void) const;
 	const RECT GetCaptureRect(std::string key) const;
+
+	const bool GetStartFlag(void) const;
+	void GameStart(void);
 
 	// ‰Šú‰»ˆ—
 	bool Init(void);

@@ -15,6 +15,9 @@ Character::Character(std::string pass, Vector2f divCnt, Size divSize, std::share
 		hImg.data()
 	);
 
+	Character::divCnt = divCnt;
+	Character::divSize = divSize;
+
 	Character::gameWnd = gameWnd;
 	Character::stage = stage;
 }

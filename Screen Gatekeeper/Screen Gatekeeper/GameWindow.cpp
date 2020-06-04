@@ -1,6 +1,5 @@
 #include <DxLib.h>
 #include <cassert>
-#include "Geometry.h"
 #include "Application.h"
 #include "GameWindow.h"
 
