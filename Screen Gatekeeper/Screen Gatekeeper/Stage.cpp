@@ -29,6 +29,72 @@ Stage::GetGoalPos(void) const {
 	);
 }
 
+bool
+Stage::CheckHitWall(Position2f sPos, int length) {
+	int x = (sPos.x - stageData.pos.x) / ChipSize;
+	int sy = (sPos.y - stageData.pos.y) / ChipSize;
+	int ey = (
+		static_cast<int>(sPos.y - stageData.pos.y + length) % ChipSize == 0 ?
+		(sPos.y - stageData.pos.y + length) / ChipSize :
+		(sPos.y - stageData.pos.y + length) / ChipSize + 1
+		);
+
+	for (; sy < ey; sy++) {
+		int chipNo = stageData.mapData[sy * stageData.chipCnt.x + x];
+		if ((chipNo == 1) || (chipNo == 3) || (chipNo == 5)) {
+			return true;
+		}
+	}
+
+	Rect rc(Position2f(sPos.x, sPos.y + length / 2), Size(0, length));
+	for (auto wndChip : wndChips) {
+		if (wndChip.outWndFlag) {
+			continue;
+		}
+
+		Rect chipRc(wndChip.pos, Size(ChipSize, ChipSize));
+		Size overlapSize = GetOverlap(rc, chipRc).size;
+		if ((overlapSize.width == 0) && (overlapSize.height > 0)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool
+Stage::CheckHitFloor(Position2f sPos, int length) {
+	int y = (sPos.y - stageData.pos.y) / ChipSize;
+	int sx = (sPos.x - stageData.pos.x) / ChipSize;
+	int ex = (
+		static_cast<int>(sPos.x - stageData.pos.x + length) % ChipSize == 0 ?
+		(sPos.x - stageData.pos.x + length) / ChipSize :
+		(sPos.x - stageData.pos.x + length) / ChipSize + 1
+		);
+
+	for (; sx < ex; sx++) {
+		int chipNo = stageData.mapData[y * stageData.chipCnt.x + sx];
+		if ((chipNo == 1) || (chipNo == 2) || (chipNo == 5) || (chipNo == 6)) {
+			return true;
+		}
+	}
+
+	/*Rect rc(Position2f(sPos.x + length / 2, sPos.y), Size(length, 0));
+	for (auto wndChip : wndChips) {
+		if (wndChip.outWndFlag) {
+			continue;
+		}
+
+		Rect chipRc(wndChip.pos, Size(ChipSize, ChipSize));
+		Size overlapSize = GetOverlap(rc, chipRc).size;
+		if ((overlapSize.width > 0) && (overlapSize.height == 0)) {
+			return true;
+		}
+	}*/
+
+	return false;
+}
+
 void
 Stage::UpdateStageImg(void) {
 	fenceChips.resize(0);

@@ -45,6 +45,9 @@ public:
 	Position2f GetStartPos(void) const;
 	Position2f GetGoalPos(void) const;
 
+	bool CheckHitWall(Position2f sPos, int length);
+	bool CheckHitFloor(Position2f sPos, int length);
+
 	void Init(void);
 
 	void Update(void);

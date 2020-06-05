@@ -23,15 +23,40 @@ Alien::WaitState(void) {
 
 void
 Alien::FallState(void) {
+	pos.y++;
+	if (stage->CheckHitFloor(pos + Position2f(0, divSize.height), divSize.width)) {
+		state = &Alien::WaitState;
+	}
 }
 
 void
 Alien::WalkState(void) {
 	if (walkDirIsLeft) {
-		pos.x--;
+		if (stage->CheckHitWall(pos - Position2f(1, 0), divSize.height)) {
+			walkDirIsLeft = false;
+		}
+		else {
+			pos.x--;
+		}
 	}
 	else {
-		pos.x++;
+		if (stage->CheckHitWall(pos + Position2f(divSize.width, 0), divSize.height)) {
+			walkDirIsLeft = true;
+		}
+		else {
+			pos.x++;
+		}
+	}
+
+	if ((pos.x < mousePos.x) && (mousePos.x < (pos.x + divSize.width))
+		&& (pos.y < mousePos.y) && (mousePos.y < (pos.y + divSize.height))) {
+		if ((mouseInputLeftOld == 0) && (GetMouseInput() & MOUSE_INPUT_LEFT)) {
+			state = &Alien::WaitState;
+		}
+	}
+
+	if (!stage->CheckHitFloor(pos + Position2f(0, divSize.height), divSize.width)) {
+		state = &Alien::FallState;
 	}
 }
 
@@ -106,7 +131,15 @@ Alien::Draw(void) {
 	}
 
 	if (outWndStandbyFlag) {
-		DrawGraph(pos.x, pos.y, hImg[animCnt / 4 % 2 + animState], true);
+		DrawRotaGraph(
+			pos.x + divSize.width / 2,
+			pos.y + divSize.height / 2,
+			1.0f,
+			0.0f,
+			hImg[animCnt / 4 % 2 + animState],
+			true,
+			walkDirIsLeft
+			);
 	}
 	else {
 		const Position2f clientPos = gameWnd->GetClientPos();
@@ -142,7 +175,8 @@ Alien::Draw(void) {
 			overlap.size.width,
 			overlap.size.height,
 			hImg[animCnt / 4 % 2 + animState],
-			true
+			true,
+			walkDirIsLeft
 		);
 	}
 }
