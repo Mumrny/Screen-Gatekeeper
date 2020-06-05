@@ -24,7 +24,11 @@ Alien::WaitState(void) {
 void
 Alien::FallState(void) {
 	pos.y++;
-	if (stage->CheckHitFloor(pos + Position2f(0, divSize.height), divSize.width)) {
+	if (outWndFlag) {
+		return;
+	}
+	if ((stage->CheckHitFloor(pos + Position2f(0, divSize.height), divSize.width))
+	 || (stage->CheckHitFloorIsFenceBlock(pos + Position2f(0, divSize.height - 1), divSize.width))) {
 		state = &Alien::WaitState;
 	}
 }
@@ -51,17 +55,32 @@ Alien::WalkState(void) {
 	if ((pos.x < mousePos.x) && (mousePos.x < (pos.x + divSize.width))
 		&& (pos.y < mousePos.y) && (mousePos.y < (pos.y + divSize.height))) {
 		if ((mouseInputLeftOld == 0) && (GetMouseInput() & MOUSE_INPUT_LEFT)) {
-			state = &Alien::WaitState;
+			if (stage->CheckHitFloorIsRiseBlock(pos + Position2f(0, divSize.height), divSize.width)) {
+				state = &Alien::RiseState;
+			}
+			else {
+				state = &Alien::WaitState;
+			}
 		}
 	}
 
-	if (!stage->CheckHitFloor(pos + Position2f(0, divSize.height), divSize.width)) {
+	if ((!stage->CheckHitFloor(pos + Position2f(0, divSize.height), divSize.width))
+	 && (!stage->CheckHitFloorIsFenceBlock(pos + Position2f(0, divSize.height - 1), divSize.width))) {
 		state = &Alien::FallState;
 	}
 }
 
 void
 Alien::RiseState(void) {
+	pos.y--;
+	if (stage->CheckHitFloor(pos, divSize.width)) {
+		state = &Alien::FallState;
+	}
+}
+
+void
+Alien::DethState(void) {
+	pos.y--;
 }
 
 void
@@ -89,6 +108,42 @@ Alien::CheckLack(void) {
 }
 
 void
+Alien::UpdateOutWndFlag(void) {
+	if (state == &Alien::DethState) {
+		return;
+	}
+
+	const Position2f clientPos = gameWnd->GetClientPos();
+	const Size clientSize = gameWnd->GetClientSize();
+
+	if ((pos.x + divSize.width / 2) <= clientPos.x) {
+		outWndFlag = true;
+		return;
+	}
+	if (clientPos.x + clientSize.width <= (pos.x + divSize.width / 2)) {
+		outWndFlag = true;
+		return;
+	}
+	if ((pos.y + divSize.height / 2) <= clientPos.y) {
+		outWndFlag = true;
+		return;
+	}
+	if (clientPos.y + clientSize.height <= (pos.y + divSize.height / 2)) {
+		outWndFlag = true;
+		return;
+	}
+
+	if (outWndFlag) {
+		Rect rc(pos + Position2f(divSize.width / 2, divSize.height / 2), divSize);
+		if (stage->CheckOverlap(rc)) {
+			state = &Alien::DethState;
+		}
+	}
+
+	outWndFlag = false;
+}
+
+void
 Alien::Init(void) {
 	Position2f startPos = stage->GetStartPos();
 	pos = { startPos.x - divSize.width / 2, startPos.y - divSize.height };
@@ -102,11 +157,19 @@ Alien::Init(void) {
 	walkDirIsLeft = false;
 	outWndFlag = false;
 	outWndStandbyFlag = false;
+
+	hRingImg = LoadGraph("Image/Ring.png");
 }
 
 void
 Alien::Update(void) {
 	GetMousePoint(&mousePos.x, &mousePos.y);
+	if (outWndStandbyFlag) {
+		UpdateOutWndFlag();
+	}
+	if (outWndFlag) {
+		state = &Alien::FallState;
+	}
 	(this->*state)();
 	mouseInputLeftOld = (GetMouseInput() & MOUSE_INPUT_LEFT);
 
@@ -114,7 +177,9 @@ Alien::Update(void) {
 		CheckLack();
 	}
 
-	animCnt++;
+	if (state != &Alien::DethState) {
+		animCnt++;
+	}
 }
 
 void
@@ -131,15 +196,21 @@ Alien::Draw(void) {
 	}
 
 	if (outWndStandbyFlag) {
-		DrawRotaGraph(
-			pos.x + divSize.width / 2,
-			pos.y + divSize.height / 2,
-			1.0f,
-			0.0f,
-			hImg[animCnt / 4 % 2 + animState],
-			true,
-			walkDirIsLeft
+		if (state == &Alien::DethState) {
+			DrawGraph(pos.x, pos.y, hImg[7], true);
+			DrawGraph(pos.x, pos.y - 30, hRingImg, true);
+		}
+		else {
+			DrawRotaGraph(
+				pos.x + divSize.width / 2,
+				pos.y + divSize.height / 2,
+				1.0f,
+				0.0f,
+				hImg[animCnt / 4 % 2 + animState],
+				true,
+				walkDirIsLeft
 			);
+		}
 	}
 	else {
 		const Position2f clientPos = gameWnd->GetClientPos();
@@ -160,8 +231,15 @@ Alien::Draw(void) {
 		Rect overlap = GetOverlap(clientRc, alienRc);
 
 		Position2 sRcPos = { 0, 0 };
-		if (alienRc.Left() <= clientRc.Left()) {
-			sRcPos.x = divSize.width - overlap.size.width;
+		if (walkDirIsLeft) {
+			if (clientRc.Right() <= alienRc.Right()) {
+				sRcPos.x = divSize.width - overlap.size.width;
+			}
+		}
+		else {
+			if (alienRc.Left() <= clientRc.Left()) {
+				sRcPos.x = divSize.width - overlap.size.width;
+			}
 		}
 		if (alienRc.Top() <= clientRc.Top()) {
 			sRcPos.y = divSize.height - overlap.size.height;

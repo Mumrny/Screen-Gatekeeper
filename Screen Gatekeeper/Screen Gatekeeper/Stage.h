@@ -47,6 +47,10 @@ public:
 
 	bool CheckHitWall(Position2f sPos, int length);
 	bool CheckHitFloor(Position2f sPos, int length);
+	bool CheckHitFloorIsRiseBlock(Position2f sPos, int length);
+	bool CheckHitFloorIsFenceBlock(Position2f sPos, int length);
+
+	bool CheckOverlap(Rect rc);
 
 	void Init(void);
 

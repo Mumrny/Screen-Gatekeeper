@@ -39,6 +39,11 @@ Stage::CheckHitWall(Position2f sPos, int length) {
 		(sPos.y - stageData.pos.y + length) / ChipSize + 1
 		);
 
+	if ((x < 0) || (x >= stageData.chipCnt.x)
+		|| (sy < 0) || (ey > stageData.chipCnt.y)) {
+		return false;
+	}
+
 	for (; sy < ey; sy++) {
 		int chipNo = stageData.mapData[sy * stageData.chipCnt.x + x];
 		if ((chipNo == 1) || (chipNo == 3) || (chipNo == 5)) {
@@ -72,6 +77,11 @@ Stage::CheckHitFloor(Position2f sPos, int length) {
 		(sPos.x - stageData.pos.x + length) / ChipSize + 1
 		);
 
+	if ((y < 0) || (y >= stageData.chipCnt.y)
+	 || (sx < 0) || (ex > stageData.chipCnt.x)) {
+		return false;
+	}
+
 	for (; sx < ex; sx++) {
 		int chipNo = stageData.mapData[y * stageData.chipCnt.x + sx];
 		if ((chipNo == 1) || (chipNo == 2) || (chipNo == 5) || (chipNo == 6)) {
@@ -79,7 +89,7 @@ Stage::CheckHitFloor(Position2f sPos, int length) {
 		}
 	}
 
-	/*Rect rc(Position2f(sPos.x + length / 2, sPos.y), Size(length, 0));
+	Rect rc(Position2f(sPos.x + length / 2, sPos.y), Size(length, 0));
 	for (auto wndChip : wndChips) {
 		if (wndChip.outWndFlag) {
 			continue;
@@ -90,7 +100,73 @@ Stage::CheckHitFloor(Position2f sPos, int length) {
 		if ((overlapSize.width > 0) && (overlapSize.height == 0)) {
 			return true;
 		}
-	}*/
+	}
+
+	return false;
+}
+
+bool
+Stage::CheckHitFloorIsRiseBlock(Position2f sPos, int length) {
+	int y = (sPos.y - stageData.pos.y) / ChipSize;
+	int sx = (sPos.x - stageData.pos.x) / ChipSize;
+	int ex = (
+		static_cast<int>(sPos.x - stageData.pos.x + length) % ChipSize == 0 ?
+		(sPos.x - stageData.pos.x + length) / ChipSize :
+		(sPos.x - stageData.pos.x + length) / ChipSize + 1
+		);
+
+	if ((y < 0) || (y >= stageData.chipCnt.y)
+		|| (sx < 0) || (ex > stageData.chipCnt.x)) {
+		return false;
+	}
+
+	for (; sx < ex; sx++) {
+		int chipNo = stageData.mapData[y * stageData.chipCnt.x + sx];
+		if (chipNo == 6) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool
+Stage::CheckHitFloorIsFenceBlock(Position2f sPos, int length) {
+	if (static_cast<int>(sPos.y - stageData.pos.y) % ChipSize < ChipSize - 1) {
+		return false;
+	}
+
+	Rect rc(Position2f(sPos.x + length / 2, sPos.y), Size(length, 0));
+	for (auto fenceChip : fenceChips) {
+		Rect chipRc(fenceChip.pos, Size(ChipSize, ChipSize));
+		Size overlapSize = GetOverlap(rc, chipRc).size;
+		if ((overlapSize.width > 0) && (overlapSize.height == 0)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool
+Stage::CheckOverlap(Rect rc) {
+	int sx = max(rc.Left() - stageData.pos.x, 0);
+	sx /= ChipSize;
+	int sy = max(rc.Top() - stageData.pos.y, 0);
+	sy /= ChipSize;
+
+	int ex = min(rc.Right() - stageData.pos.x, stageData.size.width);
+	ex = (ex % ChipSize == 0 ? ex / ChipSize : ex / ChipSize + 1);
+	int ey = min(rc.Bottom() - stageData.pos.y, stageData.size.height);
+	ey = (ey % ChipSize == 0 ? ey / ChipSize : ey / ChipSize + 1);
+
+	for (int i = sy; i < ey; i++) {
+		for (int j = sx; j < ex; j++) {
+			int md = stageData.mapData[i * stageData.chipCnt.x + j];
+			if (md != 0) {
+				return true;
+			}
+		}
+	}
 
 	return false;
 }
@@ -149,12 +225,12 @@ Stage::Init(void) {
 	 3, 4, 4, 4, 3, 0, 0, 0, 3, 4, 4, 4, 3, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0, 3,
 	 3, 4, 4, 4, 3, 0, 0, 0, 3, 4, 4, 4, 3, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0, 3,
 	 3, 4, 4, 4, 3, 0, 0, 0, 3, 4, 4, 4, 3, 0, 0, 3, 7, 7, 7, 3, 0, 0, 0, 3,
-	 3, 4, 4, 4, 3, 0, 0, 0, 3, 4, 4, 4, 3, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0, 3,
-	 3, 4, 4, 4, 1, 2, 2, 2, 1, 4, 4, 4, 3, 5, 5, 3, 0, 0, 0, 1, 2, 2, 2, 1,
+	 3, 4, 4, 4, 3, 0, 0, 0, 3, 4, 4, 4, 3, 0, 0, 3, 0, 0, 0, 1, 2, 2, 2, 1,
+	 3, 4, 4, 4, 1, 2, 2, 2, 1, 4, 4, 4, 3, 5, 5, 3, 0, 0, 0, 3, 4, 4, 4, 3,
 	 3, 4, 4, 4, 3, 0, 0, 0, 3, 4, 4, 4, 3, 0, 0, 3, 0, 0, 0, 3, 4, 4, 4, 3,
 	 3, 4, 4, 4, 3, 0, 0, 0, 3, 4, 4, 4, 3, 0, 0, 3, 0, 0, 0, 3, 4, 4, 4, 3,
-	 3, 4, 4, 4, 3, 0, 0, 0, 3, 4, 4, 4, 3, 0, 0, 3, 0, 0, 0, 3, 4, 4, 4, 3,
-	 3, 4, 4, 4, 3, 0, 0, 0, 1, 2, 2, 2, 1, 0, 0, 3, 5, 5, 5, 1, 2, 2, 2, 1,
+	 3, 4, 4, 4, 3, 0, 0, 0, 3, 4, 4, 4, 3, 0, 0, 3, 0, 0, 0, 1, 2, 2, 2, 1,
+	 3, 4, 4, 4, 3, 0, 0, 0, 1, 2, 2, 2, 1, 0, 0, 3, 5, 5, 5, 1, 0, 0, 0, 3,
 	 3, 4, 4, 4, 3, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 3,
 	 3, 4, 4, 4, 3, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 3,
 	 3, 4, 4, 4, 3, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 3,
