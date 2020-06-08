@@ -19,6 +19,16 @@ Alien::WaitState(void) {
 			Application::Instance().GameStart();
 		}
 	}
+
+	if ((!stage->CheckHitFloor(pos + Position2f(0, divSize.height), divSize.width))
+		&& (!stage->CheckHitFloorIsFenceBlock(pos + Position2f(0, divSize.height - 1), divSize.width))) {
+		state = &Alien::FallState;
+	}
+
+	Rect rc(pos + Position2f(divSize.width / 2, divSize.height / 2), divSize);
+	if (stage->CheckOverlapGoal(rc)) {
+		Application::Instance().Goal();
+	}
 }
 
 void
@@ -67,6 +77,11 @@ Alien::WalkState(void) {
 	if ((!stage->CheckHitFloor(pos + Position2f(0, divSize.height), divSize.width))
 	 && (!stage->CheckHitFloorIsFenceBlock(pos + Position2f(0, divSize.height - 1), divSize.width))) {
 		state = &Alien::FallState;
+	}
+
+	Rect rc(pos + Position2f(divSize.width / 2, divSize.height / 2), divSize);
+	if (stage->CheckOverlapGoal(rc)) {
+		Application::Instance().Goal();
 	}
 }
 
@@ -206,7 +221,7 @@ Alien::Draw(void) {
 				pos.y + divSize.height / 2,
 				1.0f,
 				0.0f,
-				hImg[animCnt / 4 % 2 + animState],
+				hImg[animCnt / 10 % 2 + animState],
 				true,
 				walkDirIsLeft
 			);
@@ -252,7 +267,7 @@ Alien::Draw(void) {
 			sRcPos.y,
 			overlap.size.width,
 			overlap.size.height,
-			hImg[animCnt / 4 % 2 + animState],
+			hImg[animCnt / 10 % 2 + animState],
 			true,
 			walkDirIsLeft
 		);

@@ -40,8 +40,10 @@ private:
 	std::shared_ptr<GameWindow> gameWnd;
 	std::shared_ptr<Stage> stage;
 	std::shared_ptr<Character> alien;
+	std::shared_ptr<Character> ufo;
 
 	bool startFlag;
+	bool goalFlag;
 
 	void CreateCaptureDataForHwnd(HWND hWnd, std::string key, bool reCreateFlag);
 	void ReCreateCapDataHimg(std::string key);
@@ -60,7 +62,9 @@ public:
 	const RECT GetCaptureRect(std::string key) const;
 
 	const bool GetStartFlag(void) const;
+	const bool GetGoalFlag(void) const;
 	void GameStart(void);
+	void Goal(void);
 
 	// ‰Šú‰»ˆ—
 	bool Init(void);

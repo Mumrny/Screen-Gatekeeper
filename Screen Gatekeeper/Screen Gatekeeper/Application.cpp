@@ -4,6 +4,7 @@
 #include "GameWindow.h"
 #include "Stage.h"
 #include "Alien.h"
+#include "UFO.h"
 #include "Application.h"
 
 
@@ -80,7 +81,10 @@ Application::Update(void) {
 	if (startFlag) {
 		stage->Update();
 	}
-	alien->Update();
+	if (!goalFlag) {
+		alien->Update();
+	}
+	ufo->Update();
 }
 
 void
@@ -92,9 +96,16 @@ Application::Draw(void) {
 	gameWnd->Draw();
 	stage->DrawMap();
 
-	alien->Draw();
+	if (!goalFlag) {
+		ufo->Draw();
+		alien->Draw();
+	}
 
 	stage->DrawFenceChips();
+
+	if (goalFlag) {
+		ufo->Draw();
+	}
 
 	// タスクバーの色情報の取り方が見つかるまでの仮置き背景
 	SetDrawBlendMode(DX_BLENDMODE_ALPHA_X4, 256 - 4);
@@ -134,9 +145,19 @@ Application::GetStartFlag(void) const {
 	return startFlag;
 }
 
+const bool
+Application::GetGoalFlag(void) const {
+	return goalFlag;
+}
+
 void
 Application::GameStart(void) {
 	startFlag = true;
+}
+
+void
+Application::Goal(void) {
+	goalFlag = true;
 }
 
 bool
@@ -171,7 +192,11 @@ Application::Init(void) {
 	alien.reset(new Alien("Image/Alien.png", Vector2f(4, 2), Size(60, 120), gameWnd, stage));
 	alien->Init();
 
+	ufo.reset(new UFO("Image/UFO.png", Vector2f(2, 2), Size(120, 120), gameWnd, stage));
+	ufo->Init();
+
 	startFlag = false;
+	goalFlag = false;
 
 	return true;
 }

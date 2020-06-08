@@ -51,6 +51,7 @@ public:
 	bool CheckHitFloorIsFenceBlock(Position2f sPos, int length);
 
 	bool CheckOverlap(Rect rc);
+	bool CheckOverlapGoal(Rect rc);
 
 	void Init(void);
 

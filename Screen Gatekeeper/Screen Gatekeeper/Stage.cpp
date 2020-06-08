@@ -162,7 +162,38 @@ Stage::CheckOverlap(Rect rc) {
 	for (int i = sy; i < ey; i++) {
 		for (int j = sx; j < ex; j++) {
 			int md = stageData.mapData[i * stageData.chipCnt.x + j];
-			if (md != 0) {
+			if ((md != 0) && (md != 7)) {
+				return true;
+			}
+		}
+	}
+
+	for (auto wndChip : wndChips) {
+		Rect chipRc(wndChip.pos, Size(ChipSize, ChipSize));
+		Size overlapSize = GetOverlap(rc, chipRc).size;
+		if ((overlapSize.width > 0) && (overlapSize.height > 0)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool
+Stage::CheckOverlapGoal(Rect rc) {
+	int sx = max(rc.Left() - stageData.pos.x, 0);
+	sx /= ChipSize;
+	int sy = max(rc.Top() - stageData.pos.y, 0);
+	sy /= ChipSize;
+
+	int ex = min(rc.Right() - stageData.pos.x, stageData.size.width);
+	ex = (ex % ChipSize == 0 ? ex / ChipSize : ex / ChipSize + 1);
+	int ey = min(rc.Bottom() - stageData.pos.y, stageData.size.height);
+	ey = (ey % ChipSize == 0 ? ey / ChipSize : ey / ChipSize + 1);
+
+	for (int i = sy; i < ey; i++) {
+		for (int j = sx; j < ex; j++) {
+			if ((j == stageData.goalPoint.x) && (i == stageData.goalPoint.y)) {
 				return true;
 			}
 		}
