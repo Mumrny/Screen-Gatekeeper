@@ -40,10 +40,18 @@ private:
 	std::shared_ptr<GameWindow> gameWnd;
 	std::shared_ptr<Stage> stage;
 	std::shared_ptr<Character> alien;
+	std::shared_ptr<Character> nushi;
 	std::shared_ptr<Character> ufo;
 
 	bool startFlag;
 	bool goalFlag;
+	bool openFlag;
+	bool eatFlag;
+	bool closeFlag;
+
+	int openStartPosY;
+	int dividePosX;
+	int divideLength;
 
 	void CreateCaptureDataForHwnd(HWND hWnd, std::string key, bool reCreateFlag);
 	void ReCreateCapDataHimg(std::string key);
@@ -65,6 +73,12 @@ public:
 	const bool GetGoalFlag(void) const;
 	void GameStart(void);
 	void Goal(void);
+	void Open(int dividePosX);
+	void Eat(void);
+	void Close(void);
+	const int GetOpenStartPosY(void) const;
+	const int GetDividePosX(void) const;
+	const int GetDivideLength(void) const;
 
 	// èâä˙âªèàóù
 	bool Init(void);

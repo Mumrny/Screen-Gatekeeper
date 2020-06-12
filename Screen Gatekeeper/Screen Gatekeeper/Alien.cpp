@@ -35,6 +35,12 @@ void
 Alien::FallState(void) {
 	pos.y++;
 	if (outWndFlag) {
+		if (Application::Instance().GetCaptureRect("taskbar").top <= (pos.y + divSize.height)) {
+			return;
+		}
+		if (Application::Instance().GetOpenStartPosY() <= (pos.y + divSize.height)) {
+			Application::Instance().Open(pos.x + divSize.width / 2);
+		}
 		return;
 	}
 	if ((stage->CheckHitFloor(pos + Position2f(0, divSize.height), divSize.width))

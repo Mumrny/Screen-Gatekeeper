@@ -4,9 +4,11 @@
 #include "GameWindow.h"
 #include "Stage.h"
 #include "Alien.h"
+#include "Nushi.h"
 #include "UFO.h"
 #include "Application.h"
 
+constexpr int openFrame = 15;
 
 Application::Application() {}
 
@@ -77,12 +79,30 @@ Application::ReCreateCapDataHimg(std::string key) {
 
 void
 Application::Update(void) {
+	if (openFlag) {
+		if (closeFlag) {
+			divideLength -= (180 / openFrame);
+			if (divideLength <= 0) {
+				openFlag = false;
+				closeFlag = false;
+			}
+		}
+		else {
+			if (divideLength < 180) {
+				divideLength += (180 / openFrame);
+			}
+		}
+	}
+
 	gameWnd->Update();
 	if (startFlag) {
 		stage->Update();
 	}
 	if (!goalFlag) {
 		alien->Update();
+	}
+	if (openFlag) {
+		nushi->Update();
 	}
 	ufo->Update();
 }
@@ -98,32 +118,82 @@ Application::Draw(void) {
 
 	if (!goalFlag) {
 		ufo->Draw();
-		alien->Draw();
+		if (!eatFlag) {
+			alien->Draw();
+		}
 	}
 
 	stage->DrawFenceChips();
 
+	if (!openFlag) {
+		// タスクバーの色情報の取り方が見つかるまでの仮置き背景
+		SetDrawBlendMode(DX_BLENDMODE_ALPHA_X4, 256 - 4);
+		SetDrawBright(68, 68, 68);
+		DrawBox(
+			capDatas["taskbar"].rc.left,
+			capDatas["taskbar"].rc.top,
+			capDatas["taskbar"].rc.right,
+			capDatas["taskbar"].rc.bottom,
+			0x202020,
+			true
+		);
+		SetDrawBright(255, 255, 255);
+		SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+
+		DrawGraph(0, capDatas["taskbar"].rc.top, capDatas["taskbar"].hImg, true);
+	}
+	else {
+		// タスクバーの色情報の取り方が見つかるまでの仮置き背景
+		SetDrawBlendMode(DX_BLENDMODE_ALPHA_X4, 256 - 4);
+		SetDrawBright(68, 68, 68);
+		DrawBox(
+			capDatas["taskbar"].rc.left,
+			capDatas["taskbar"].rc.top,
+			dividePosX - divideLength / 2,
+			capDatas["taskbar"].rc.bottom,
+			0x202020,
+			true
+		);
+		DrawBox(
+			dividePosX + divideLength / 2,
+			capDatas["taskbar"].rc.top,
+			capDatas["taskbar"].rc.right,
+			capDatas["taskbar"].rc.bottom,
+			0x202020,
+			true
+		);
+		SetDrawBright(255, 255, 255);
+		SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+
+		DrawRectGraph(
+			0,
+			capDatas["taskbar"].rc.top,
+			divideLength / 2,
+			0,
+			dividePosX - divideLength / 2,
+			capDatas["taskbar"].rcSize.height,
+			capDatas["taskbar"].hImg,
+			true
+		);
+		DrawRectGraph(
+			dividePosX + divideLength / 2,
+			capDatas["taskbar"].rc.top,
+			dividePosX,
+			0,
+			capDatas["taskbar"].rcSize.width - (dividePosX + divideLength / 2),
+			capDatas["taskbar"].rcSize.height,
+			capDatas["taskbar"].hImg,
+			true
+		);
+
+		nushi->Draw();
+	}
+
+	stage->DrawWndChips();
+
 	if (goalFlag) {
 		ufo->Draw();
 	}
-
-	// タスクバーの色情報の取り方が見つかるまでの仮置き背景
-	SetDrawBlendMode(DX_BLENDMODE_ALPHA_X4, 256 - 4);
-	SetDrawBright(68, 68, 68);
-	DrawBox(
-		capDatas["taskbar"].rc.left,
-		capDatas["taskbar"].rc.top,
-		capDatas["taskbar"].rc.right,
-		capDatas["taskbar"].rc.bottom,
-		0x202020,
-		true
-	);
-	SetDrawBright(255, 255, 255);
-	SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
-
-	DrawGraph(0, capDatas["taskbar"].rc.top, capDatas["taskbar"].hImg, true);
-
-	stage->DrawWndChips();
 
 	ScreenFlip();
 }
@@ -160,6 +230,37 @@ Application::Goal(void) {
 	goalFlag = true;
 }
 
+void
+Application::Open(int dividePosX) {
+	openFlag = true;
+	Application::dividePosX = dividePosX;
+}
+
+void
+Application::Eat(void) {
+	eatFlag = true;
+}
+
+void
+Application::Close(void) {
+	closeFlag = true;
+}
+
+const int
+Application::GetOpenStartPosY(void) const {
+	return openStartPosY;
+}
+
+const int
+Application::GetDividePosX(void) const {
+	return dividePosX;
+}
+
+const int
+Application::GetDivideLength(void) const {
+	return divideLength;
+}
+
 bool
 Application::Init(void) {
 	SetWindowText("Screen Gatekeeper");
@@ -183,6 +284,10 @@ Application::Init(void) {
 	CreateCaptureDataForHwnd(GetDesktopWindow(), "desktop", false);
 	CreateCaptureDataForHwnd(FindWindow("Shell_TrayWnd", nullptr), "taskbar", true);
 
+	openStartPosY = (capDatas["taskbar"].rc.top - openFrame * 2);
+	dividePosX = 0;
+	divideLength = 0;
+
 	gameWnd.reset(new GameWindow());
 	gameWnd->Init();
 
@@ -192,11 +297,17 @@ Application::Init(void) {
 	alien.reset(new Alien("Image/Alien.png", Vector2f(4, 2), Size(60, 120), gameWnd, stage));
 	alien->Init();
 
+	nushi.reset(new Nushi("Image/Nushi.png", Vector2f(2, 1), Size(180, 180), gameWnd, stage));
+	nushi->Init();
+
 	ufo.reset(new UFO("Image/UFO.png", Vector2f(2, 2), Size(120, 120), gameWnd, stage));
 	ufo->Init();
 
 	startFlag = false;
 	goalFlag = false;
+	openFlag = false;
+	eatFlag = false;
+	closeFlag = false;
 
 	return true;
 }
